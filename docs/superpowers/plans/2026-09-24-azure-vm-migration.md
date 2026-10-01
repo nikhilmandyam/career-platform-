@@ -9,7 +9,13 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** Host the resume application on the VM required by the exercise, using a region and size specified by the class guide.
 - **How it would be checked:** Confirm the VM is provisioned with the requested name, Ubuntu image, size, and region in Azure.
 - **Rollback/undo:** If a VM were created, deallocate and delete it, then remove the resource group if it contains no resources that need to be kept.
-- **Actual result:** Azure CLI installation, subscription activation, and login succeeded. VM creation in West US 2 failed with `RequestDisallowedByAzure` because of Azure subscription regional policy. West Central US and Chile Central were also attempted and failed with the same regional-policy error. No VM was successfully created.
+- **Actual result:**
+  - [x] Azure CLI installed on my Mac.
+  - [x] Azure for Students subscription activated and Azure CLI login/authentication succeeded.
+  - [x] SSH key pair created at `~/.ssh/isba4775_azure`; public key prepared for Azure.
+  - [ ] VM creation was blocked by `RequestDisallowedByAzure` due to Azure subscription regional policy.
+  - [ ] West Central US and Chile Central attempts failed with the same regional-policy error.
+  - [ ] No VM was successfully created.
 
 ## Packages
 
@@ -18,7 +24,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** The VM needs the runtime and supporting system tools to host the application.
 - **How it would be checked:** Check installed package versions and confirm the required executables are available.
 - **Rollback/undo:** Remove packages installed for the application if they are no longer needed.
-- **Actual result:** NOT REACHED. No VM existed and SSH access was not possible.
+- **Actual result:** [ ] NOT REACHED. No VM existed and SSH access was not possible.
 
 ## Code
 
@@ -27,7 +33,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** Make the resume application available on the server.
 - **How it would be checked:** Confirm the expected application files and Git revision are present on the VM.
 - **Rollback/undo:** Restore the previous application revision or remove the deployed application directory.
-- **Actual result:** NOT REACHED. No VM existed, so code was not transferred.
+- **Actual result:** [ ] NOT REACHED. No VM existed, so code was not transferred.
 
 ## Python
 
@@ -36,7 +42,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** Isolate the application's Python packages from the system Python installation.
 - **How it would be checked:** Confirm the virtual environment is active, dependencies install successfully, and the application imports.
 - **Rollback/undo:** Stop using and remove the application virtual environment; recreate it from the dependency list if needed.
-- **Actual result:** NOT REACHED. Python environment setup could not begin without a VM.
+- **Actual result:** [ ] NOT REACHED. Python environment setup could not begin without a VM.
 
 ## Config
 
@@ -45,7 +51,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** The deployed application needs server-specific settings to connect to its database and serve requests.
 - **How it would be checked:** Review the configuration on the VM and confirm the application can load it without exposing secrets.
 - **Rollback/undo:** Restore a saved configuration or remove deployment-specific settings and return to the prior known-good configuration.
-- **Actual result:** NOT REACHED. No server configuration was created.
+- **Actual result:** [ ] NOT REACHED. No server configuration was created.
 
 ## Data
 
@@ -54,7 +60,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** The resume site's project list is database-backed.
 - **How it would be checked:** Confirm the database is reachable and the expected project records can be read by the application.
 - **Rollback/undo:** Preserve a database backup, then restore it or remove only the deployment data if rollback is required.
-- **Actual result:** NOT REACHED. Data transfer and database setup on Azure were not performed.
+- **Actual result:** [ ] NOT REACHED. Data transfer and database setup on Azure were not performed.
 
 ## Processes
 
@@ -63,7 +69,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** The site must continue serving visitors reliably.
 - **How it would be checked:** Inspect the process or service status and request the application locally on the VM.
 - **Rollback/undo:** Stop and disable the application service, then restore its previous service configuration if one existed.
-- **Actual result:** NOT REACHED. The application was not started on a VM.
+- **Actual result:** [ ] NOT REACHED. The application was not started on a VM.
 
 ## Verify
 
@@ -72,7 +78,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** These checks demonstrate that the migration produced a working, reachable site.
 - **How it would be checked:** Confirm Azure resource details, connect over SSH, check the application process, request the site over HTTP on port 8000, and capture the site screenshot.
 - **Rollback/undo:** If verification fails, stop the application and deallocate the VM while diagnosing; delete deployment resources if abandoning the migration.
-- **Actual result:** VM-dependent checks were not possible because Azure policy prevented VM creation. Individual outcomes are listed in the Verify results table at the end of this plan.
+- **Actual result:** [ ] VM-dependent checks were not possible because Azure policy prevented VM creation. Individual outcomes are listed in the Verify results table at the end of this plan.
 
 ## Shutdown
 
@@ -81,7 +87,7 @@ This plan records the intended migration of the career platform to an Azure Ubun
 - **Why:** Avoid leaving unneeded compute resources running and reduce ongoing Azure costs.
 - **How it would be checked:** Confirm the VM reports a deallocated or deleted state in Azure.
 - **Rollback/undo:** Start a deallocated VM again if it is still needed; restore from backups or redeploy if it was deleted.
-- **Actual result:** NOT REACHED. No VM was created, so there was nothing to deallocate or shut down.
+- **Actual result:** [ ] NOT REACHED. No VM was created, so there was nothing to deallocate or shut down.
 
 ## Verify results
 

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Resume and selected projects for {{ resume.profile.name }}">
+    <title>{{ resume.profile.name }} | Resume</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#profile">{{ resume.profile.name }}</a>
+      <nav aria-label="Resume sections">
+        <a href="#experience">Experience</a>
+        <a href="#education">Education</a>
+        <a href="#skills">Skills</a>
+        <a href="#projects">Projects</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="profile" class="hero">
+        <p class="eyebrow">Resume</p>
+        <h1>Profile</h1>
+        <p class="name">{{ resume.profile.name }}</p>
+        <p class="headline">{{ resume.profile.headline }}</p>
+      </section>
+
+      <section id="summary" class="content-section">
+        <p class="eyebrow">Introduction</p>
+        <h2>Summary</h2>
+        <p>{{ resume.summary }}</p>
+      </section>
+
+      <section id="experience" class="content-section">
+        <p class="eyebrow">Career</p>
+        <h2>Experience</h2>
+        {% if resume.experience %}
+          {% for item in resume.experience %}
+            <article class="entry">
+              <h3>{{ item.role }}</h3>
+              <p class="entry-meta">{{ item.organization }} · {{ item.dates }}</p>
+              <p>{{ item.description }}</p>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">Add your experience in <code>app/content.py</code>.</p>
+        {% endif %}
+      </section>
+
+      <section id="education" class="content-section">
+        <p class="eyebrow">Learning</p>
+        <h2>Education</h2>
+        {% if resume.education %}
+          {% for item in resume.education %}
+            <article class="entry">
+              <h3>{{ item.program }}</h3>
+              <p class="entry-meta">{{ item.institution }} · {{ item.dates }}</p>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">Add your education in <code>app/content.py</code>.</p>
+        {% endif %}
+      </section>
+
+      <section id="skills" class="content-section">
+        <p class="eyebrow">Strengths</p>
+        <h2>Skills</h2>
+        {% if resume.skills %}
+          <ul class="skill-list">
+            {% for skill in resume.skills %}
+              <li>{{ skill }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty-state">Add your skills in <code>app/content.py</code>.</p>
+        {% endif %}
+      </section>
+
+      <section id="projects" class="content-section">
+        <p class="eyebrow">Selected work</p>
+        <h2>Projects</h2>
+        <p class="empty-state">Projects are loaded from the local database.</p>
+      </section>
+
+      <section id="contact" class="content-section">
+        <p class="eyebrow">Get in touch</p>
+        <h2>Contact</h2>
+        {% if resume.contact %}
+          <ul class="contact-list">
+            {% for item in resume.contact %}
+              <li><a href="{{ item.url }}">{{ item.label }}</a></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty-state">Add contact links in <code>app/content.py</code>.</p>
+        {% endif %}
+      </section>
+    </main>
+
+    <footer>
+      <p>{{ resume.profile.name }} · Resume</p>
+    </footer>
+  </body>
+</html>

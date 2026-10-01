@@ -45,6 +45,55 @@ def test_static_stylesheet_is_served():
     assert "font-family" in response.text
 
 
+def test_stylesheet_link_is_root_relative_and_cache_busted():
+    from app.main import app
+
+    response = TestClient(app).get("/")
+
+    assert (
+        '<link rel="stylesheet" href="/static/style.css?v=3">'
+        in response.text
+    )
+
+
+def test_small_secondary_text_meets_wcag_aa_contrast():
+    import re
+    from pathlib import Path
+
+    stylesheet = (Path(__file__).resolve().parents[1] / "app/static/style.css").read_text()
+
+    def foreground(selector):
+        match = re.search(rf"{re.escape(selector)}\s*\{{([^}}]*)\}}", stylesheet)
+        assert match is not None
+        color = re.search(r"color:\s*(#[0-9a-fA-F]{6})", match.group(1))
+        assert color is not None
+        return color.group(1)
+
+    def luminance(color):
+        channels = [
+            int(color[index : index + 2], 16) / 255
+            for index in (1, 3, 5)
+        ]
+        linear = [
+            value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+            for value in channels
+        ]
+        return sum(weight * value for weight, value in zip((0.2126, 0.7152, 0.0722), linear))
+
+    def contrast_ratio(foreground_color, background_color):
+        high, low = sorted(
+            (luminance(foreground_color), luminance(background_color)),
+            reverse=True,
+        )
+        return (high + 0.05) / (low + 0.05)
+
+    year_color = foreground(".tag--credential span")
+    footer_color = foreground("footer")
+
+    assert contrast_ratio(year_color, "#f7f9fb") >= 4.5
+    assert contrast_ratio(footer_color, "#f2f5f7") >= 4.5
+
+
 def test_home_renders_database_projects(database_url, tmp_path):
     from app.main import app
 

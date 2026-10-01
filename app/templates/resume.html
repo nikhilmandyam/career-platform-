@@ -5,45 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Resume and selected projects for {{ resume.profile.name }}">
     <title>{{ resume.profile.name }} | Resume</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <link rel="stylesheet" href="/static/style.css?v=3">
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#profile">{{ resume.profile.name }}</a>
-      <nav aria-label="Resume sections">
-        <a href="#experience">Experience</a>
-        <a href="#education">Education</a>
-        <a href="#skills">Skills</a>
-        <a href="#certifications">Certifications</a>
-        <a href="#leadership">Leadership</a>
-        <a href="#projects">Projects</a>
-        <a href="#contact">Contact</a>
-      </nav>
+      <div class="site-header__inner">
+        <a class="brand" href="#profile">{{ resume.profile.name }}</a>
+        <nav aria-label="Resume sections">
+          <a href="#summary">About</a>
+          <a href="#experience">Experience</a>
+          <a href="#education">Education</a>
+          <a href="#skills">Skills</a>
+          <a href="#certifications">Certifications</a>
+          <a href="#leadership">Leadership</a>
+          <a href="#projects">Projects</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </div>
     </header>
 
-    <main>
-      <section id="profile" class="hero">
-        <p class="eyebrow">Resume</p>
-        <h1>Profile</h1>
-        <p class="name">{{ resume.profile.name }}</p>
-        <p class="headline">{{ resume.profile.headline }}</p>
+    <main class="layout-shell">
+      <section id="profile" class="hero-panel">
+        <div class="hero-panel__content">
+          <p class="eyebrow">Profile</p>
+          <h1>{{ resume.profile.name }}</h1>
+          <p class="headline">{{ resume.profile.headline }}</p>
+        </div>
       </section>
 
-      <section id="summary" class="content-section">
+      <div class="resume-grid">
+      <section id="summary" class="resume-card resume-card--summary">
         <p class="eyebrow">Introduction</p>
         <h2>Summary</h2>
-        <p>{{ resume.summary }}</p>
+        <p class="summary-copy">{{ resume.summary }}</p>
       </section>
 
-      <section id="experience" class="content-section">
+      <section id="experience" class="resume-card resume-card--wide">
         <p class="eyebrow">Career</p>
         <h2>Experience</h2>
         {% if resume.experience %}
           {% for item in resume.experience %}
-            <article class="entry">
-              <h3>{{ item.role }}</h3>
-              <p class="entry-meta">{{ item.organization }} · {{ item.location }} · {{ item.dates }}</p>
-              <ul>
+            <article class="timeline-entry">
+              <div class="timeline-entry__heading">
+                <div>
+                  <h3>{{ item.role }}</h3>
+                  <p class="entry-organization">{{ item.organization }}</p>
+                </div>
+                <time class="entry-date">{{ item.dates }}</time>
+              </div>
+              <p class="entry-location">{{ item.location }}</p>
+              <ul class="detail-list">
                 {% for highlight in item.highlights %}
                   <li>{{ highlight }}</li>
                 {% endfor %}
@@ -55,17 +66,18 @@
         {% endif %}
       </section>
 
-      <section id="education" class="content-section">
+      <section id="education" class="resume-card">
         <p class="eyebrow">Learning</p>
         <h2>Education</h2>
         {% if resume.education %}
           {% for item in resume.education %}
-            <article class="entry">
+            <article class="education-entry">
               <h3>{{ item.program }}</h3>
-              <p class="entry-meta">{{ item.institution }} · {{ item.location }} · {{ item.dates }}</p>
-              <p>GPA: {{ item.gpa }}</p>
-              <h4>Relevant coursework</h4>
-              <ul>
+              <p class="entry-organization">{{ item.institution }}</p>
+              <p class="entry-location">{{ item.location }} · {{ item.dates }}</p>
+              <p class="gpa">GPA: {{ item.gpa }}</p>
+              <h4 class="subheading">Relevant coursework</h4>
+              <ul class="course-list">
                 {% for course in item.coursework %}
                   <li>{{ course }}</li>
                 {% endfor %}
@@ -77,13 +89,13 @@
         {% endif %}
       </section>
 
-      <section id="skills" class="content-section">
+      <section id="skills" class="resume-card">
         <p class="eyebrow">Strengths</p>
         <h2>Skills</h2>
         {% if resume.skills %}
-          <ul class="skill-list">
+          <ul class="tag-list">
             {% for skill in resume.skills %}
-              <li>{{ skill }}</li>
+              <li class="tag">{{ skill }}</li>
             {% endfor %}
           </ul>
         {% else %}
@@ -91,35 +103,36 @@
         {% endif %}
       </section>
 
-      <section id="certifications" class="content-section">
+      <section id="certifications" class="resume-card">
         <p class="eyebrow">Credentials</p>
         <h2>Certifications</h2>
-        <ul>
+        <ul class="tag-list">
           {% for certification in resume.certifications %}
-            <li>{{ certification.name }} ({{ certification.year }})</li>
+            <li class="tag tag--credential">{{ certification.name }} <span>{{ certification.year }}</span></li>
           {% endfor %}
         </ul>
       </section>
 
-      <section id="leadership" class="content-section">
+      <section id="leadership" class="resume-card">
         <p class="eyebrow">Community</p>
         <h2>Leadership</h2>
         {% for item in resume.leadership %}
-          <article class="entry">
+          <article class="leadership-entry">
             <h3>{{ item.organization }}</h3>
-            <p class="entry-meta">{{ item.institution }} · {{ item.dates }}</p>
+            <p class="entry-organization">{{ item.institution }}</p>
+            <time class="entry-date">{{ item.dates }}</time>
           </article>
         {% endfor %}
       </section>
 
-      <section id="projects" class="content-section">
+      <section id="projects" class="resume-card">
         <p class="eyebrow">Selected work</p>
         <h2>Projects</h2>
         {% if projects is none %}
-          <p class="empty-state">Projects temporarily unavailable. Please try again later.</p>
+          <p class="empty-state" role="status">Projects temporarily unavailable. Please try again later.</p>
         {% elif projects %}
           {% for project in projects %}
-            <article class="entry">
+            <article class="project-card">
               <h3>{{ project.title }}</h3>
               <p>{{ project.description }}</p>
               {% if project.url %}
@@ -132,7 +145,7 @@
         {% endif %}
       </section>
 
-      <section id="contact" class="content-section">
+      <section id="contact" class="resume-card contact-panel">
         <p class="eyebrow">Get in touch</p>
         <h2>Contact</h2>
         {% if resume.contact %}
@@ -151,6 +164,7 @@
           <p class="empty-state">Add contact links in <code>app/content.py</code>.</p>
         {% endif %}
       </section>
+      </div>
     </main>
 
     <footer>

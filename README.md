@@ -53,9 +53,11 @@ Initialize the schema and import the projects from `data/projects.json`:
 python scripts/init_db.py
 ```
 
-Edit `app/content.py` to update your profile, summary, experience, education,
-skills, certifications, leadership, and contact links. Add projects to
-`data/projects.json` and rerun the initializer to upsert those stable IDs.
+The current profile and resume sections are populated in `app/content.py`.
+Replace the LinkedIn and GitHub labels only after you have the corresponding
+URLs; do not add a phone number or home address. The database seed contains one
+clearly labeled project placeholder in `data/projects.json`. Replace it with
+finalized project records and rerun the initializer to upsert those stable IDs.
 
 ### 3. Run and test
 

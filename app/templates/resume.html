@@ -14,6 +14,8 @@
         <a href="#experience">Experience</a>
         <a href="#education">Education</a>
         <a href="#skills">Skills</a>
+        <a href="#certifications">Certifications</a>
+        <a href="#leadership">Leadership</a>
         <a href="#projects">Projects</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -40,8 +42,12 @@
           {% for item in resume.experience %}
             <article class="entry">
               <h3>{{ item.role }}</h3>
-              <p class="entry-meta">{{ item.organization }} · {{ item.dates }}</p>
-              <p>{{ item.description }}</p>
+              <p class="entry-meta">{{ item.organization }} · {{ item.location }} · {{ item.dates }}</p>
+              <ul>
+                {% for highlight in item.highlights %}
+                  <li>{{ highlight }}</li>
+                {% endfor %}
+              </ul>
             </article>
           {% endfor %}
         {% else %}
@@ -56,7 +62,14 @@
           {% for item in resume.education %}
             <article class="entry">
               <h3>{{ item.program }}</h3>
-              <p class="entry-meta">{{ item.institution }} · {{ item.dates }}</p>
+              <p class="entry-meta">{{ item.institution }} · {{ item.location }} · {{ item.dates }}</p>
+              <p>GPA: {{ item.gpa }}</p>
+              <h4>Relevant coursework</h4>
+              <ul>
+                {% for course in item.coursework %}
+                  <li>{{ course }}</li>
+                {% endfor %}
+              </ul>
             </article>
           {% endfor %}
         {% else %}
@@ -76,6 +89,27 @@
         {% else %}
           <p class="empty-state">Add your skills in <code>app/content.py</code>.</p>
         {% endif %}
+      </section>
+
+      <section id="certifications" class="content-section">
+        <p class="eyebrow">Credentials</p>
+        <h2>Certifications</h2>
+        <ul>
+          {% for certification in resume.certifications %}
+            <li>{{ certification.name }} ({{ certification.year }})</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section id="leadership" class="content-section">
+        <p class="eyebrow">Community</p>
+        <h2>Leadership</h2>
+        {% for item in resume.leadership %}
+          <article class="entry">
+            <h3>{{ item.organization }}</h3>
+            <p class="entry-meta">{{ item.institution }} · {{ item.dates }}</p>
+          </article>
+        {% endfor %}
       </section>
 
       <section id="projects" class="content-section">
@@ -104,7 +138,13 @@
         {% if resume.contact %}
           <ul class="contact-list">
             {% for item in resume.contact %}
-              <li><a href="{{ item.url }}">{{ item.label }}</a></li>
+              <li>
+                {% if item.url %}
+                  <a href="{{ item.url }}">{{ item.label }}: {{ item.value }}</a>
+                {% else %}
+                  <span>{{ item.label }}: {{ item.value }}</span>
+                {% endif %}
+              </li>
             {% endfor %}
           </ul>
         {% else %}

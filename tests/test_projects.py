@@ -97,3 +97,17 @@ def test_load_projects_returns_none_and_logs_sqlalchemy_error(monkeypatch, caplo
 
     assert result is None
     assert "Failed to load projects" in caplog.text
+
+
+def test_load_projects_returns_none_when_database_url_is_missing(monkeypatch, caplog):
+    import app.projects as projects
+    from app.database import get_session_factory
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    get_session_factory.cache_clear()
+
+    with caplog.at_level(logging.ERROR):
+        result = projects.load_projects()
+
+    assert result is None
+    assert "Failed to load projects" in caplog.text

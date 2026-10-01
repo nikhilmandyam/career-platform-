@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.content import RESUME_CONTENT
+from app.projects import load_projects
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 app = FastAPI()
@@ -21,5 +22,8 @@ def home(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="resume.html",
-        context={"resume": RESUME_CONTENT},
+        context={
+            "resume": RESUME_CONTENT,
+            "projects": load_projects(),
+        },
     )

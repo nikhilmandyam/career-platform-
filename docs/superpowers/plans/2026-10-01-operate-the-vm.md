@@ -135,6 +135,14 @@
 - [x] Uvicorn remains private on `127.0.0.1:8000`.
 - [x] TCP port 8000 is not publicly reachable; the external connection timed out.
 
+## Instructor Manual Reliability Checks
+
+**Actual results (reported by VM owner):**
+- [x] **Azure VM restart test:** PASS. After reboot, MySQL, `career-platform`, and Nginx returned active, and the public resume site loaded.
+- [x] **Single Uvicorn worker failure test:** PASS. Worker PID `1000` was killed; the site remained available and Uvicorn created replacement worker PID `1225`.
+- [x] **Main Uvicorn process crash test:** PASS. MainPID `995` was terminated with SIGKILL; systemd restarted the service with MainPID `1241`, `NRestarts=1`, and the local site check returned `SITE RECOVERED`.
+- [x] **Service stop/recovery test:** PASS. Stopping `career-platform` caused Nginx to return HTTP 502; starting `career-platform` restored HTTP 200, and the service is active again.
+
 ## Completion Criteria
 
 - `http://9.205.30.229/` serves the resume site through Nginx on port 80.

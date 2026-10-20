@@ -4,6 +4,16 @@ import logging
 from sqlalchemy.exc import OperationalError
 
 
+def test_postgresql_database_url_builds_with_installed_driver():
+    from app.database import build_engine
+
+    engine = build_engine("postgresql://resume:placeholder@localhost/resume")
+    try:
+        assert engine.dialect.name == "postgresql"
+    finally:
+        engine.dispose()
+
+
 def test_projects_order_by_display_order_then_id(database_url, tmp_path):
     from app.projects import load_projects
     from app.seed import initialize_database

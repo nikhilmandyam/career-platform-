@@ -3,5 +3,6 @@ uvicorn
 jinja2
 sqlalchemy
 pymysql
+psycopg[binary]
 pytest
 httpx2

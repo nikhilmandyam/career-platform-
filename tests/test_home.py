@@ -157,6 +157,27 @@ def test_home_shows_empty_projects_state(database_url):
     assert "Projects temporarily unavailable" not in response.text
 
 
+def test_app_creates_empty_database_schema_on_startup(monkeypatch, tmp_path):
+    from sqlalchemy import inspect
+    from sqlalchemy.orm import Session
+
+    from app.database import build_engine
+    from app.main import app
+    from app.models import Project
+
+    database_url = f"sqlite:///{tmp_path / 'empty.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+
+    with TestClient(app):
+        engine = build_engine(database_url)
+        try:
+            assert inspect(engine).has_table("projects")
+            with Session(engine) as session:
+                assert session.query(Project).count() == 0
+        finally:
+            engine.dispose()
+
+
 def test_project_without_url_has_no_link(database_url, tmp_path):
     from app.main import app
 
@@ -221,6 +242,8 @@ def test_home_displays_approved_resume_details():
 
 
 def test_contact_links_use_approved_email_and_keep_missing_profiles_as_text():
+    import re
+
     from app.main import app
 
     response = TestClient(app).get("/")
@@ -228,10 +251,11 @@ def test_contact_links_use_approved_email_and_keep_missing_profiles_as_text():
         "</section>", 1
     )[0]
 
-    assert (
-        '<a href="mailto:nikhilmandyam@gmail.com">'
-        "Email: nikhilmandyam@gmail.com</a>"
-    ) in contact_section
+    assert re.search(
+        r'<a href="mailto:nikhilmandyam@gmail.com">\s*'
+        r"Email: nikhilmandyam@gmail.com\s*</a>",
+        contact_section,
+    )
     assert "LinkedIn" in contact_section
     assert "[Add LinkedIn URL]" in contact_section
     assert "[Add GitHub URL]" in contact_section

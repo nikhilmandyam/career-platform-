@@ -87,7 +87,15 @@ RESUME_CONTENT = {
             "value": "nikhilmandyam@gmail.com",
             "url": "mailto:nikhilmandyam@gmail.com",
         },
-        {"label": "LinkedIn", "value": "[Add LinkedIn URL]", "url": None},
-        {"label": "GitHub", "value": "[Add GitHub URL]", "url": None},
+        {
+            "label": "LinkedIn",
+            "value": "linkedin.com/in/nikhilmandyam",
+            "url": "https://www.linkedin.com/in/nikhilmandyam",
+        },
+        {
+            "label": "GitHub",
+            "value": "github.com/nikhilmandyam/career-platform-",
+            "url": "https://github.com/nikhilmandyam/career-platform-",
+        },
     ],
 }

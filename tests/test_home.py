@@ -241,7 +241,7 @@ def test_home_displays_approved_resume_details():
         assert f'id="{section}"' in response.text
 
 
-def test_contact_links_use_approved_email_and_keep_missing_profiles_as_text():
+def test_contact_links_use_approved_email_and_github_url():
     import re
 
     from app.main import app
@@ -257,11 +257,18 @@ def test_contact_links_use_approved_email_and_keep_missing_profiles_as_text():
         contact_section,
     )
     assert "LinkedIn" in contact_section
-    assert "[Add LinkedIn URL]" in contact_section
-    assert "[Add GitHub URL]" in contact_section
-    assert 'href="[Add LinkedIn URL]"' not in contact_section
-    assert 'href="[Add GitHub URL]"' not in contact_section
-    assert contact_section.count("<a ") == 1
+    assert re.search(
+        r'<a href="https://www.linkedin.com/in/nikhilmandyam">\s*'
+        r"LinkedIn: linkedin.com/in/nikhilmandyam\s*</a>",
+        contact_section,
+    )
+    assert re.search(
+        r'<a href="https://github.com/nikhilmandyam/career-platform-">\s*'
+        r"GitHub: github.com/nikhilmandyam/career-platform-\s*</a>",
+        contact_section,
+    )
+    assert contact_section.count("<a ") == 3
+    assert 'target="_blank"' not in contact_section
     assert "Phone:" not in contact_section
     assert "Address:" not in contact_section
 

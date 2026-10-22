@@ -2,7 +2,7 @@
 
 - **Repository:** [nikhilmandyam/career-platform-](https://github.com/nikhilmandyam/career-platform-)
 - **Live HTTPS site:** [https://dueyy.me](https://dueyy.me)
-- **Final commit SHA:** TO BE FILLED AFTER FINAL COMMIT
+- **Project 1 final content commit SHA:** 977b0f3fead9d0dca9666979b0724a21024b2cc3
 
 ## Project record
 

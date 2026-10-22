@@ -22,7 +22,7 @@ def test_home_includes_bundled_resume_sections(monkeypatch):
 
     response = TestClient(app).get("/")
 
-    assert response.status_code == 200
+    assert response.status_code == 503
     for section, heading in (
         ("profile", "Profile"),
         ("summary", "Summary"),
@@ -121,6 +121,7 @@ def test_home_renders_database_projects(database_url, tmp_path):
     response = TestClient(app).get("/")
 
     assert response.status_code == 200
+    assert "Nikhil Mandyam" in response.text
     assert response.text.index("First project") < response.text.index("Later project")
     assert 'href="https://example.com/first"' in response.text
 
@@ -132,7 +133,7 @@ def test_home_keeps_resume_visible_when_database_unavailable(monkeypatch):
 
     response = TestClient(main.app).get("/")
 
-    assert response.status_code == 200
+    assert response.status_code == 503
     for section in (
         "profile",
         "summary",
@@ -144,7 +145,10 @@ def test_home_keeps_resume_visible_when_database_unavailable(monkeypatch):
         "contact",
     ):
         assert f'id="{section}"' in response.text
-    assert "Projects temporarily unavailable" in response.text
+    assert (
+        '<p class="empty-state" role="status"> Projects temporarily unavailable </p>'
+        in " ".join(response.text.split())
+    )
 
 
 def test_home_shows_empty_projects_state(database_url):
@@ -153,8 +157,102 @@ def test_home_shows_empty_projects_state(database_url):
     response = TestClient(app).get("/")
 
     assert response.status_code == 200
+    assert 'id="profile"' in response.text
     assert "No projects listed yet" in response.text
     assert "Projects temporarily unavailable" not in response.text
+
+
+def test_database_query_failure_recovers_on_refresh_without_app_restart(
+    database_url, tmp_path
+):
+    from fastapi.testclient import TestClient
+    from sqlalchemy import event
+    from sqlalchemy.exc import OperationalError
+
+    import app.projects as projects
+    from app.main import app
+
+    _initialize_projects(
+        database_url,
+        tmp_path,
+        [
+            {
+                "id": "recovery-project",
+                "title": "Recovered project",
+                "description": "Available after the database recovers",
+                "url": None,
+                "display_order": 1,
+            }
+        ],
+    )
+    engine = projects.get_session_factory().kw["bind"]
+    failure = {"pending": True}
+
+    def fail_once_before_project_query(
+        connection, cursor, statement, parameters, context, executemany
+    ):
+        if (
+            failure["pending"]
+            and statement.lstrip().lower().startswith("select")
+            and "projects" in statement.lower()
+        ):
+            failure["pending"] = False
+            raise OperationalError(
+                statement,
+                parameters,
+                RuntimeError("simulated temporary database failure"),
+            )
+
+    event.listen(engine, "before_cursor_execute", fail_once_before_project_query)
+    try:
+        with TestClient(app) as client:
+            failed_response = client.get("/")
+            recovered_response = client.get("/")
+    finally:
+        event.remove(
+            engine,
+            "before_cursor_execute",
+            fail_once_before_project_query,
+        )
+
+    assert failed_response.status_code == 503
+    assert "Nikhil Mandyam" in failed_response.text
+    assert "Projects temporarily unavailable" in failed_response.text
+    assert recovered_response.status_code == 200
+    assert "Recovered project" in recovered_response.text
+
+
+def test_startup_schema_failure_is_retried_on_request(monkeypatch, tmp_path):
+    import app.main as main
+    from fastapi.testclient import TestClient
+    from sqlalchemy.exc import OperationalError
+
+    from app.database import create_schema as create_schema_once_available
+
+    database_url = f"sqlite:///{tmp_path / 'startup-recovery.db'}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    attempts = 0
+
+    def fail_first_schema_attempt(url):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OperationalError(
+                "CREATE TABLE",
+                {},
+                RuntimeError("simulated startup database outage"),
+            )
+        create_schema_once_available(url)
+
+    monkeypatch.setattr(main, "create_schema", fail_first_schema_attempt)
+
+    with TestClient(main.app) as client:
+        response = client.get("/")
+
+    assert attempts == 2
+    assert response.status_code == 200
+    assert "Nikhil Mandyam" in response.text
+    assert "No projects listed yet" in response.text
 
 
 def test_app_creates_empty_database_schema_on_startup(monkeypatch, tmp_path):
@@ -209,7 +307,7 @@ def test_home_displays_approved_resume_details():
 
     response = TestClient(app).get("/")
 
-    assert response.status_code == 200
+    assert response.status_code == 503
     for detail in (
         "Nikhil Mandyam",
         "Information Systems and Business Analytics student at Loyola Marymount University",

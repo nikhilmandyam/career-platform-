@@ -11,21 +11,41 @@ projects, and contact sections.
 
 ## Current and historical architecture
 
-### A. Current Railway web path
+### AWS production and staging architecture
 
 ```mermaid
 flowchart LR
-  Visitor[Visitor browser] -->|HTTPS dueyy.me| DNS[Cloudflare DNS]
-  DNS -->|bare domain| App[Railway application]
-  Visitor -->|HTTP or HTTPS www.dueyy.me| Proxy[Proxied Cloudflare www CNAME and redirect rule]
-  Proxy -->|301 to https://dueyy.me/| DNS
-  App -->|DATABASE_URL| DB[Railway PostgreSQL]
+  Browser[Visitor browser] -->|DNS query| DNS[Cloudflare DNS<br/>DNS only; A records for dueyy.me and aws.dueyy.me]
+  DNS -.->|resolves to| EIP
+  Browser -->|HTTPS :443| EIP
+  Laptop[My laptop] -->|SSH administration| EIP
+
+  subgraph AWS[AWS us-east-1]
+    EIP[Elastic IP<br/>54.156.58.67]
+    subgraph VPC[VPC]
+      subgraph Public[Public subnet]
+        EC2[EC2 Ubuntu 26.04 LTS x86_64<br/>t3.micro; 20 GiB encrypted gp3]
+        Nginx[Nginx<br/>HTTPS/TLS terminates here]
+        App[FastAPI / Uvicorn]
+        EC2 --> Nginx -->|HTTP reverse proxy| App
+      end
+      subgraph Private[Private subnet]
+        RDS[(RDS PostgreSQL<br/>Single-AZ db.t4g.micro<br/>20 GiB encrypted gp3)]
+      end
+    end
+    Backups[(RDS automated backups<br/>1-day retention)]
+    EIP -->|attached to| EC2
+    App -->|PostgreSQL 5432; RDS SG allows EC2 SG only| RDS
+    RDS -->|automated backup| Backups
+  end
 ```
 
-The bare domain returned HTTP 200 to GET during the October 22, 2026 final
-check. The Railway `Procfile` binds Uvicorn to `0.0.0.0:$PORT` and enables
-forwarded proxy headers. Exact Railway-side TLS termination and provider
-configuration are not established by repository evidence.
+On November 10, 2026, production DNS moved to the AWS Elastic IP after
+`aws.dueyy.me` passed staging verification. Railway stayed live until staging
+passed and remains available as rollback during final verification. The AWS
+Free Plan's RDS automated-backup retention limit was one day: AWS rejected the
+requested seven days, and no paid upgrade was used. The independently verified
+dump is also retained outside AWS. See [Exercise 07](docs/evidence/ex07.md).
 
 ### B. Historical Azure deployment
 
@@ -119,67 +139,60 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 Codespaces can forward port 8000.
 
-### GitHub and Railway
+### GitHub and deployment
 
-Review and test changes locally, then push the intended revision to GitHub
-`main`. The project deployment workflow is Railway deployment from `main`;
-the exact service trigger settings are provider configuration and are not
-stored in this repository. Do not put Railway secrets in Git. The Railway
-`Procfile` supplies the web process and `$PORT` binding.
+AWS serves production as of November 10, 2026. Railway was kept live through
+staging verification and remains available for rollback during final
+verification. The exact AWS deployment automation is not recorded here.
+Keep deployment secrets outside Git.
 
-## Railway/PostgreSQL migration
+## Railway/PostgreSQL migration history
 
-No contemporaneous Railway migration plan was committed. The
-[migration record](docs/evidence/railway-migration-record.md) is retrospective,
-not the original cutover plan. The
+The [Railway migration record](docs/evidence/railway-migration-record.md)
+documents the earlier migration to Railway retrospectively, not its original
+cutover plan. [Exercise 07](docs/evidence/ex07.md) records the later AWS
+restore and production cutover. The
 [post-cutover data verification](docs/evidence/railway-data-verification.md)
 records an October 21, 2026 check with source count = target count = 1 and all
-fields matching exactly. Current production database data differs from the
-unchanged placeholder in `data/projects.json`; restoring the seed alone would
-not reproduce the production row.
+fields matching exactly. The AWS restore also contained the verified project
+row. Production data differs from the unchanged placeholder in
+`data/projects.json`; restoring the seed alone would not reproduce it.
 
 ## Rollback
 
-- **Application:** Select a prior known-good Git revision, verify it is
-  compatible with the current database, then redeploy it through Railway or
-  revert the application changes and redeploy. Git history identifies the
-  Railway compatibility commit, but does not prove a specific deployed
-  revision is known-good. No rollback is claimed as tested.
-- **DNS:** Point traffic back to Azure only after confirming the Azure
-  application, networking, and HTTPS endpoint are available and healthy.
-- **Database:** Before routing traffic to Azure or restoring older data,
-  identify and reconcile any post-cutover Railway writes. There is no verified
-  automatic rollback for divergent database contents.
+- **Application and DNS:** Railway remains available as a rollback target
+  during final AWS verification. Before routing traffic back, verify the
+  Railway application, database state, and HTTPS endpoint, then restore the
+  appropriate Cloudflare DNS record.
+- **Database:** Before serving from an older database or restoring data,
+  identify and reconcile writes made after cutover. Do not overwrite the
+  verified AWS database with an older copy.
 
-## Azure and Railway responsibilities
+## AWS, Railway, and Azure responsibilities
 
-| Responsibility | Azure (historical evidence) | Railway (current evidence / limits) |
-|---|---|---|
-| OS | Ubuntu VM | Provider-managed; exact OS unverified |
-| Runtime | Uvicorn managed by systemd | Uvicorn command in `Procfile`; platform process management external |
-| Web entry point | Nginx, ports 80/443, proxy to loopback port 8000 | Uvicorn binds `0.0.0.0:$PORT`; forwarded proxy headers enabled |
-| TLS | Let's Encrypt certificate documented on Azure Nginx | Live certificate facts below; exact termination/provider config unverified |
-| Application code | Git-based; exact production revision unverified | Git-based; exact production revision unverified |
-| Configuration/secrets | External to Git | External to Git; values and full service settings unverified |
-| Database software | MySQL | PostgreSQL |
-| Database data | Azure source row recorded in verification evidence | Railway target row recorded and field-matched |
-| DNS | Historical Cloudflare DNS-only path to Azure | `www` Cloudflare proxy/redirect is evidenced; full current DNS configuration is not in Git |
+| Responsibility | AWS (current) | Railway (rollback) | Azure (historical) |
+|---|---|---|---|
+| OS | Ubuntu 26.04 LTS x86_64 on EC2 | Provider-managed; exact OS unverified | Ubuntu VM |
+| Runtime | Nginx and FastAPI/Uvicorn on EC2 | Uvicorn command in `Procfile`; provider process management | Uvicorn managed by systemd |
+| Web entry point | Elastic IP to Nginx; HTTPS terminates at Nginx | Not the current DNS target | Nginx on ports 80/443 |
+| Database | Private Single-AZ RDS PostgreSQL | PostgreSQL retained for rollback | MySQL |
+| Database data | AWS RDS restore verified with one project row | No project data changed after the verified backup; later state must be checked before rollback | Azure source row in historical evidence |
+| DNS | DNS-only A records for `dueyy.me` and `aws.dueyy.me` to the Elastic IP | Not the current DNS target | Historical Cloudflare path to Azure |
 
 ## Domain and HTTPS
 
-The bare `dueyy.me` reached the Railway application in the October 22, 2026
-check. The supplied October 21 Cloudflare evidence shows `www.dueyy.me` as a
-proxied CNAME to `dueyy.me` and the enabled **“Redirect www to root”** rule.
-The October 22 HTTP checks returned 301 for both `http://www.dueyy.me` and
-`https://www.dueyy.me`, with `Location: https://dueyy.me/`. See the
-[final domain check](docs/evidence/project1-domain-final-check.md) and
-[Cloudflare redirect screenshot](docs/evidence/project1-www-redirect.png).
+At the November 10, 2026 cutover, the Cloudflare root record changed from the
+Railway CNAME to a DNS-only A record for `54.156.58.67`; `aws.dueyy.me` also
+resolves to that address. Nginx terminates HTTPS, and the Let's Encrypt
+certificate covers both names. Staging and production HTTPS checks passed;
+see [Exercise 07](docs/evidence/ex07.md).
 
-The live certificate observed for `dueyy.me` had subject `CN=dueyy.me`, issuer
-`C=US, O=Let's Encrypt, CN=YE2`, validity from October 20, 2026 07:50:12 GMT
-through January 18, 2027 07:50:11 GMT, and SAN `DNS:dueyy.me`. These are
-certificate facts only. Renewal configuration or behavior was not established
-by the live inspection commands and requires provider/configuration evidence.
+The October 21-22 Cloudflare `www` redirect and certificate checks predate the
+AWS cutover; they are historical evidence, not the current production path.
+See the [final domain check](docs/evidence/project1-domain-final-check.md) and
+[Cloudflare redirect screenshot](docs/evidence/project1-www-redirect.png).
+Certificate renewal behavior is not established by the verification recorded
+here.
 
 ## Zoho email
 
@@ -202,6 +215,11 @@ screenshots. The site also provides a [privacy page](https://dueyy.me/privacy).
 
 ## Decisions
 
+- **AWS-managed database or PostgreSQL on EC2:** I chose one EC2 app instance
+  and a separate private, Single-AZ RDS PostgreSQL database, accepting
+  additional cost and Single-AZ availability risk for AWS-managed database
+  operations and app/database separation. The Free Plan limited automated
+  backup retention to one day rather than the requested seven days.
 - **Railway/PostgreSQL or continuing to self-manage Azure:** The project had a
   documented Azure VM deployment using Nginx, systemd, and local MySQL; its
   operations required managing those VM components. The repository later added
@@ -241,29 +259,27 @@ contemporaneously instead of reconstructing it afterward.
 
 ## Costs, credits, expiry, and cleanup
 
+- AWS Section 6 baseline estimate with `db.t4g.micro`: **about $26.82/month**
+  ($7.59 EC2 compute, $11.68 RDS compute, and $7.55 storage/public IPv4/other
+  baseline), before taxes and variable usage. The AWS Free Plan had **$100 in
+  credits remaining before resources were created**. See [Exercise 07](docs/evidence/ex07.md)
+  for the current billing evidence status.
 - Railway Trial balance reported as observed October 21, 2026: **22 days or
   $4.92 remaining**. Treat trial limits and expiration according to course
   guidance; the complete provider terms are not recorded here.
-- Keep the Azure VM running until instructor cleanup directions are received.
 - Azure dollar cost is **not recorded** in the available repository evidence.
-- After instructor approval, preserve required evidence, confirm database
-  backup/reconciliation needs, and follow the instructor's cleanup directions
-  for cloud resources.
+- Do not delete the Railway rollback environment or change AWS resources until
+  final verification and instructor cleanup directions are complete.
 
 ## Remaining limitations
 
-- No contemporaneous Railway migration plan was committed; the migration record
-  is retrospective.
 - The before-MX email result is unverified and not contemporaneously recorded.
-- A fresh GET to `https://dueyy.me` returned HTTP 200 on October 22, 2026; no
-  platform outage was observed at that check time. This is not a guarantee of
-  ongoing availability.
-- The original Railway cutover time, sequence, and first production revision
-  are unverified. The currently deployed revision and a production-known-good
-  rollback revision are also not established.
-- Current Railway TLS termination, full DNS/provider settings, and later
-  database writes are not established by the repository evidence. Certificate
-  renewal behavior is not proven by the final live certificate inspection.
+- The AWS staging and production checks are point-in-time results, not a
+  guarantee of ongoing availability.
+- Railway remains available for rollback during final verification; any
+  database changes after cutover must be reconciled before switching back.
+- The exact AWS deployed Git revision and certificate renewal behavior are
+  not recorded here.
 
 ## Evidence index
 
